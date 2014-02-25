@@ -1,6 +1,8 @@
 module Feldspar.Core where
 
 import Data.List
+import Data.Int
+import Data.Word
 
 type Var = Int
 
@@ -92,40 +94,40 @@ data Size = Eight | Sixteen | Thirtytwo | Sixtyfour
 class Ty a where
   reify :: a -> Type
 
-instance Ty P.Int where
-  reify _ = IntT P.True Machine
+instance Ty Int where
+  reify _ = IntT True Machine
 
-instance Ty I.Int8 where
-  reify _ = IntT P.True Eight
+instance Ty Int8 where
+  reify _ = IntT True Eight
 
-instance Ty I.Int16 where
-  reify _ = IntT P.True Sixteen
+instance Ty Int16 where
+  reify _ = IntT True Sixteen
 
-instance Ty I.Int32 where
-  reify _ = IntT P.True Thirtytwo
+instance Ty Int32 where
+  reify _ = IntT True Thirtytwo
 
-instance Ty I.Int64 where
-  reify _ = IntT P.True Sixtyfour
+instance Ty Int64 where
+  reify _ = IntT True Sixtyfour
 
-instance Ty W.Word where
-  reify _ = IntT P.False Machine
+instance Ty Word where
+  reify _ = IntT False Machine
 
-instance Ty W.Word8 where
-  reify _ = IntT P.False Eight
+instance Ty Word8 where
+  reify _ = IntT False Eight
 
-instance Ty W.Word16 where
-  reify _ = IntT P.False Sixteen
+instance Ty Word16 where
+  reify _ = IntT False Sixteen
 
-instance Ty W.Word32 where
-  reify _ = IntT P.False Thirtytwo
+instance Ty Word32 where
+  reify _ = IntT False Thirtytwo
 
-instance Ty W.Word64 where
-  reify _ = IntT P.False Sixtyfour
+instance Ty Word64 where
+  reify _ = IntT False Sixtyfour
 
-instance Ty P.Float where
+instance Ty Float where
   reify _ = FloatT
 
-instance Ty P.Double where
+instance Ty Double where
   reify _ = DoubleT
 
 splitPairs :: Type -> [Type]
@@ -136,17 +138,17 @@ splitPairs t = [t]
 newVar :: Expr -> Var
 newVar (Binop _ e1 e2)  = newVar e1 ⊔ newVar e2
 newVar (Unop _ e)       = newVar e
-newVar (Parallel e v _) = newVar e ⊔ (v + 1)
+newVar (Parallel e v _) = newVar e  ⊔ (v + 1)
 newVar (Index e1 e2)    = newVar e1 ⊔ newVar e2
 newVar (Pair es)        = foldl' (⊔) 0 (map newVar es)
 newVar (Var v)          = 0
-newVar (RunP p)         = newVarP p
+newVar (RunP e p)       = newVar e  ⊔ newVarP p
 newVar _                = 0
-                                  
+
 newVarP :: P -> Var
-newVarP (Assign e1 e2) = newVar e1 ⊔ newVar e2
-newVarP (ParFor e v _) = newVar e  ⊔ v
-newVarP (LetP v e _)   = newVar e  ⊔ v
+newVarP (Assign e1 e2) = newVar e1  ⊔ newVar e2
+newVarP (ParFor e v _) = newVar e   ⊔ v
+newVarP (LetP v e _)   = newVar e   ⊔ v
 newVarP (Par p1 p2)    = newVarP p1 ⊔ newVarP p2
 
 v1 ⊔ v2 = max v1 v2
@@ -218,7 +220,7 @@ eval (ForLoop l init i s body) =
 eval (Let v e1 e2) = do val <- eval e1
                         bindV v val $ eval e2
 eval (Var v) = lookupVar v
-eval (RunP p) = error "Unimplemented"  
+eval (RunP e p) = error "Unimplemented"  
 
 evalBinop :: Binop -> (Expr -> Expr -> EvalM Expr)
 evalBinop Plus (Int ty i) (Int _ j) = return (Int ty (i+j))
