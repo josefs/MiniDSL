@@ -1,8 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE ExistentialQuantification  #-}
 module Feldspar.Frontend where
 
 import qualified Prelude as P
@@ -188,20 +189,34 @@ instance Functor Push where
   fmap f (Push g l) = Push (\k -> g (\i a -> k i (f a)))  l
 
 class Pully vec where
-  toPull :: vec a -> Pull a
+  toPull :: Syntax a => vec a -> Pull a
 
 instance Pully Pull where
   toPull p = p
 
+instance Pully Manifest where
+  toPull m@(Manifest _ l) = Pull (\i -> m ! i) (sug l)
+
 class Pushy vec where
-  toPush :: vec a -> Push a
+  toPush :: Syntax a => vec a -> Push a
+
+instance Pushy Pull where
+  toPush (Pull ixf l) = Push (\k -> parFor l (\i -> k i (ixf i))) l
+
+instance Pushy Push where
+  toPush push = push
+
+instance Pushy Manifest where
+  toPush manifest = toPush (toPull manifest)
 
 class Storable vec where
-  store :: vec a -> Manifest a
+  store :: Syntax a => vec a -> Manifest a
 
 instance Storable Manifest where
   store manifest = manifest
 
+instance Storable Pull where
+  store pull = store (toPush pull)
+
 instance Storable Push where
-  store (Push loop l) = Manifest ? l
-    where arr = runP (loop (\i a -> i =: a)) l
+  store (Push loop l) = runP (loop (\i a -> i =: a)) l
