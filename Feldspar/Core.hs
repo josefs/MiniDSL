@@ -61,6 +61,8 @@ data Unop =
   | Recip
 
   | Not
+    -- Should I have this?
+  | Proj Int
   deriving Show
 
 instance Num Expr where
@@ -132,12 +134,14 @@ instance Ty Float where
 instance Ty Double where
   reify _ = DoubleT
 
-splitPairs :: Type -> [Type]
-splitPairs (PairT ts) = concatMap splitPairs ts
-splitPairs t = [t]
 instance Ty Bool where
   reify _ = BoolT
 
+data TupleTree a = Tuple [TupleTree a] | Atom a
+
+splitPairs :: Type -> TupleTree Type
+splitPairs (PairT ts) = Tuple (map splitPairs ts)
+splitPairs t = Atom t
 
 
 newVar :: Expr -> Var

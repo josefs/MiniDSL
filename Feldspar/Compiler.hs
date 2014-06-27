@@ -16,20 +16,22 @@ import Language.C.Quote.C
 import Data.Map (Map)
 import qualified Data.Map as M
 import Control.Monad
+import Control.Lens
 
-
-compileDest :: [Id] -> Expr -> CompileM [Stm]
-compileDest [d] (Int _ i) = just [cstm| $id:d = $(int i) ; |]
-compileDest vars (Pair es) = fmap concat $ zipWithM compileDest (map return vars) es
--- compileDest d (Float f) = just [cst| $id:d = $(??? f) ; |]
-compileDest [d] (Binop bop e1 e2) = do
+compileDest :: TupleTree (Maybe Id) -> Expr -> CompileM [Stm]
+compileDest (Atom Nothing) _ = return []
+compileDest (Atom (Just d)) (Int _ i) = just [cstm| $id:d = $(int i) ; |]
+compileDest (Tuple ts) (Pair es) = fmap concat $ zipWithM compileDest ts es
+compileDest (Atom (Just d)) (Float f) = just [cstm| $id:d = $(float f) ; |]
+compileDest (Atom (Just d)) (Binop bop e1 e2) = do
   (s1,c1) <- compile e1
   (s2,c2) <- compile e2
   return $
     s1 ++
     s2 ++
     [ [cstm| $id:d = $(binop bop c1 c2) ; |] ]
-compileDest [d] (Unop op e) = do
+compileDest tt (Unop (Proj n) e) = compileDest (Tuple (repeat (Atom Nothing) & element n .~ tt)) e
+compileDest (Atom (Just d)) (Unop op e) = do
   (s,c) <- compile e
   return $
    s ++ [ [cstm| $id:d = $(unop op c) ; |] ]
@@ -43,9 +45,19 @@ compileDest ds (If b t e) = do
                    } else {
                      $stms:el ;
                    } |] ]
+compileDest ds (Let v e1 e2) = do
+  v' <- freshId
+  stms  <- compileDest (Atom (Just v')) e1
+  subst v v'
+  stms' <- compileDest ds e2
+  return (stms ++ stms')
+compileDest ds e = error "Internal error: compile dest"
 
 int :: Integer -> Exp
 int i = Const (IntConst "" Signed (fromIntegral i) noLoc) noLoc
+
+float :: P.Float -> Exp
+float f = Const (FloatConst "" (toRational f) noLoc) noLoc
 
 binop Plus  e1 e2 = [cexp| $e1 + $e2 |]
 binop Minus e1 e2 = [cexp| $e1 - $e2 |]
@@ -99,7 +111,7 @@ compileP (ParFor e v body) arr = do
   b <- compileP body arr
   l <- freshId
   i <- freshId
-  s <- compileDest [l] e
+  s <- compileDest (Atom (Just l)) e
   return $ s ++
          [ [cstm| #pragma omp parallel for nowait
                   for(int $id:i = 0; $id:i < $id:l ; $id:i ++) {
