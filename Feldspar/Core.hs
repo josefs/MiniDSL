@@ -19,6 +19,7 @@ data Expr =
   | Array [Expr]
   | Index Expr Expr
   | Pair [Expr]
+  | If Expr Expr Expr
   | ForLoop Expr Expr Var Var Expr
 -- Binding
   | Let Var Expr Expr
@@ -142,6 +143,7 @@ newVar (Unop _ e)       = newVar e
 newVar (Parallel e v _) = newVar e  ⊔ (v + 1)
 newVar (Index e1 e2)    = newVar e1 ⊔ newVar e2
 newVar (Pair es)        = foldl' (⊔) 0 (map newVar es)
+newVar (If e1 e2 e3)    = newVar e1 ⊔ newVar e2 ⊔ newVar e3
 newVar (Var v)          = 0
 newVar (RunP e p)       = newVar e  ⊔ newVarP p
 newVar _                = 0
@@ -210,6 +212,10 @@ eval (Index e1 e2) = do Array arr <- eval e1
                         return (arr!!fromInteger i)
 eval (Pair es) = do vs <- mapM eval es
                     return (Pair vs)
+eval (If c t e) = do b <- eval c
+                     case b of
+                       Boolean True  -> eval t
+                       Boolean False -> eval e
 eval (ForLoop l init i s body) =
   do (Int _ len) <- eval l
      ist <- eval init

@@ -47,6 +47,11 @@ or T _ = T
 or _ T = T
 or b c = BOr b c
 
+cond :: Syntax a => Bool -> a -> a -> a
+cond T t _ = t
+cond F _ e = e
+cond b t e = sug $ If (boolToExpr b) (desug t) (desug e)
+
 (!) :: Syntax a => Manifest a -> Index -> a
 Manifest arr _ ! i = sug (Index arr (desug i))
 

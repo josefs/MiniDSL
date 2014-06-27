@@ -33,6 +33,16 @@ compileDest [d] (Unop op e) = do
   (s,c) <- compile e
   return $
    s ++ [ [cstm| $id:d = $(unop op c) ; |] ]
+compileDest ds (If b t e) = do
+  (cn,c) <- compile b
+  th     <- compileDest ds t
+  el     <- compileDest ds e
+  return $
+    cn ++ [ [cstm| if($c) {
+                     $stms:th ;
+                   } else {
+                     $stms:el ;
+                   } |] ]
 
 int :: Integer -> Exp
 int i = Const (IntConst "" Signed (fromIntegral i) noLoc) noLoc
