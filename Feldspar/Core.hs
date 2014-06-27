@@ -9,6 +9,7 @@ type Var = Int
 data Expr =
     Int Type Integer
   | Float Float 
+  | Double Double
   | Boolean Bool
   | Rational Rational
   | Binop Binop Expr Expr
