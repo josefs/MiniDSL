@@ -24,8 +24,8 @@ compileDest [d] (Binop bop e1 e2) = do
   (s1,c1) <- compile e1
   (s2,c2) <- compile e2
   return $
-    s1 ++ 
-    s2 ++ 
+    s1 ++
+    s2 ++
     [ [cstm| $id:d = $(binop bop c1 c2) ; |] ]
 compileDest [d] (Unop op e) = do
   (s,c) <- compile e
