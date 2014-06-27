@@ -1,14 +1,16 @@
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE PackageImports #-}
 module Feldspar.Compiler where
 
 import Prelude hiding (LT,GT)
+import qualified Prelude as P
 
 import Feldspar.Core
 import Feldspar.Frontend
 
 import Data.Loc (noLoc)
 import Data.Symbol
-import Language.C.Syntax hiding (Assign,Div,Eq,And,Or,Xor,Not)
+import "language-c-quote" Language.C.Syntax hiding (Assign,Div,Eq,And,Or,Xor,Not,If,Type)
 import Language.C.Quote.C
 
 import Data.Map (Map)
