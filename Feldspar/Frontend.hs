@@ -164,8 +164,14 @@ instance (Ty a, P.Integral a) => Syntax (Integral a) where
 type Double = Floating P.Double
 type Float = Floating P.Float
 
-data Floating a = FConst a
-                | FMem Expr
+data Floating a = FMem Expr
+
+floatingToExpr :: Floating a -> Expr
+floatingToExpr (FMem e) = e
+
+instance Syntax (Floating a) where
+  desug = floatingToExpr
+  sug e = FMem e
 
 -- Booleans
 
