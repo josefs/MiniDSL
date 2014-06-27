@@ -81,7 +81,11 @@ unop Not    e = [cexp| !$e |]
 
 
 compile :: Expr -> CompileM ([Stm],Exp)
-compile (Int _ i) = error "Foo"
+compile (Int _ i) = merely [cexp| $(int i) |]
+compile (Float f) = merely [cexp| $(float f) |]
+compile _ = error "compile: Undefined"
+
+merely e = return ([],e)
 
 {-
 data Expr =
