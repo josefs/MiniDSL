@@ -135,6 +135,9 @@ instance Ty Double where
 splitPairs :: Type -> [Type]
 splitPairs (PairT ts) = concatMap splitPairs ts
 splitPairs t = [t]
+instance Ty Bool where
+  reify _ = BoolT
+
 
 
 newVar :: Expr -> Var

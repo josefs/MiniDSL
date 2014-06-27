@@ -47,6 +47,16 @@ or T _ = T
 or _ T = T
 or b c = BOr b c
 
+not :: Bool -> Bool
+not T = F
+not F = T
+not (BAnd b1 b2) = BOr  (not b1) (not b2)
+not (BOr b1 b2)  = BAnd (not b1) (not b2)
+not (BXor b1 b2) = BEq  b1 b2
+not (BEq  b1 b2) = BXor b1 b2
+not (BNot b) = b
+not b = BNot b
+
 cond :: Syntax a => Bool -> a -> a -> a
 cond T t _ = t
 cond F _ e = e
@@ -160,11 +170,9 @@ data Floating a = FConst a
 -- Booleans
 
 data Bool =
-  T | F | BAnd Bool Bool | BOr Bool Bool | BXor Bool Bool | BNot Bool
+  T | F | BAnd Bool Bool | BOr Bool Bool | BXor Bool Bool | BEq Bool Bool
+  | BNot Bool
   | DBool Expr
-
-instance Ty P.Bool where
-  reify _ = BoolT
 
 instance Syntax Bool where
   desug = boolToExpr
@@ -176,6 +184,7 @@ boolToExpr F = Boolean P.False
 boolToExpr (BAnd b1 b2) = Binop And (boolToExpr b1) (boolToExpr b2)
 boolToExpr (BOr  b1 b2) = Binop Or  (boolToExpr b1) (boolToExpr b2)
 boolToExpr (BXor b1 b2) = Binop Xor (boolToExpr b1) (boolToExpr b2)
+boolToExpr (BEq  b1 b2) = Binop Eq  (boolToExpr b1) (boolToExpr b2)
 boolToExpr (BNot b) = Unop Not (boolToExpr b)
 boolToExpr (DBool d) = d
 
